@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "919722991183",
+    "project_id": "sign-ease-8dcfe",
+    "storage_bucket": "sign-ease-8dcfe.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919722991183:android:d92db7b2af43073de1143a",
+        "android_client_info": {
+          "package_name": "com.example.sign_ease"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQ0G5lZsiqejd98pQRZfhgZhc3dIw1M3s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
