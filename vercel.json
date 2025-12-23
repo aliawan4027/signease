@@ -2,16 +2,13 @@
   "version": 2,
   "builds": [
     {
-      "src": "web",
-      "use": "@vercel/static",
-      "config": {
-        "source": "web/build"
-      }
+      "src": "build/web",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "web",
+      "src": "build/web",
       "dest": "/"
     }
   ]
