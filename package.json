@@ -2,7 +2,6 @@
     "name": "sign-ease",
     "version": "1.0.0",
     "scripts": {
-        "build": "flutter build web --release",
         "deploy": "vercel --prod"
     }
 }
