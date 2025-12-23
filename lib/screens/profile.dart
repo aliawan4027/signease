@@ -9,7 +9,6 @@ import 'package:sign_ease/utils/cloudinary_service.dart';
 import 'package:sign_ease/utils/firebase_handler.dart';
 import 'package:sign_ease/providers/theme_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 
 class Profile extends StatefulWidget {
@@ -69,17 +68,6 @@ class _ProfileState extends State<Profile> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Preferences saved successfully!')),
     );
-  }
-
-  Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not launch URL')),
-      );
-    }
   }
 
   Future<void> _updateUserProfile() async {
@@ -303,9 +291,6 @@ class _ProfileState extends State<Profile> {
                         decorationColor: themeProvider.primaryColor,
                       ),
                       readOnly: true,
-                      onTap: () {
-                        _launchURL('https://personalportfolio12.vercel.app/');
-                      },
                     ),
                     const SizedBox(height: 16),
                     Text(

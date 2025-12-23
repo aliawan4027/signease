@@ -75,11 +75,17 @@ class _ReportState extends State<Report> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Developed by: Muhammad Ali',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
+              GestureDetector(
+                onTap: () {
+                  _launchURL('https://personalportfolio12.vercel.app/');
+                },
+                child: const Text(
+                  'Developed by: Muhammad Ali',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
