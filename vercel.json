@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "bash build-vercel.sh",
   "outputDirectory": "build/web",
   "routes": [
     {
