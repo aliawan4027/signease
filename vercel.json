@@ -1,3 +1,11 @@
 {
-  "outputDirectory": "build/web"
+  "version": 2,
+  "buildCommand": "bash build-vercel.sh",
+  "outputDirectory": "build/web",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
