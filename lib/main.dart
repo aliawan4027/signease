@@ -1,29 +1,25 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:sign_ease/screens/signin_screen.dart';
-import 'package:sign_ease/providers/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:sign_ease/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:sign_ease/screens/signin_screen.dart';
+import 'package:sign_ease/config/firebase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  try {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-          apiKey: "AIzaSyClr-9tEK8Dl8Ofu8NRv0bsNtrcUYCFMuo",
-          authDomain: "sign-ease-8dcfe.firebaseapp.com",
-          projectId: "sign-ease-8dcfe",
-          storageBucket: "sign-ease-8dcfe.appspot.com",
-          messagingSenderId: "919722991183",
-          appId: "1:919722991183:web:3ace9c5a0914cc6ae1143a",
-          measurementId: "G-VRE8VJN0RZ"),
-    );
-    print('✅ Firebase initialized successfully for web');
-  } catch (e) {
-    print('❌ Firebase initialization failed: $e');
-  }
-
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: FirebaseConfig.apiKey,
+      authDomain: FirebaseConfig.authDomain,
+      projectId: FirebaseConfig.projectId,
+      storageBucket: FirebaseConfig.storageBucket,
+      messagingSenderId: FirebaseConfig.messagingSenderId,
+      appId: FirebaseConfig.appId,
+      measurementId: FirebaseConfig.measurementId,
+    ),
+  );
+  print('✅ Firebase initialized successfully for web');
   runApp(const MyApp());
 }
 
@@ -37,21 +33,28 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'Sign Ease',
+            debugShowCheckedModeBanner: false,
             theme: ThemeData(
               primaryColor: themeProvider.primaryColor,
-              brightness: Brightness.light,
               scaffoldBackgroundColor: themeProvider.containerColor,
               textTheme: TextTheme(
                 bodyLarge: TextStyle(color: themeProvider.textColor),
                 bodyMedium: TextStyle(color: themeProvider.textColor),
                 bodySmall: TextStyle(color: themeProvider.textColor),
+                headlineLarge: TextStyle(color: themeProvider.textColor),
+                headlineMedium: TextStyle(color: themeProvider.textColor),
+                headlineSmall: TextStyle(color: themeProvider.textColor),
                 titleLarge: TextStyle(color: themeProvider.textColor),
                 titleMedium: TextStyle(color: themeProvider.textColor),
                 titleSmall: TextStyle(color: themeProvider.textColor),
+                labelLarge: TextStyle(color: themeProvider.textColor),
+                labelMedium: TextStyle(color: themeProvider.textColor),
+                labelSmall: TextStyle(color: themeProvider.textColor),
+                displayLarge: TextStyle(color: themeProvider.textColor),
+                displayMedium: TextStyle(color: themeProvider.textColor),
+                displaySmall: TextStyle(color: themeProvider.textColor),
               ),
             ),
-            debugShowCheckedModeBanner: false,
             home: const SplashScreen(),
           );
         },

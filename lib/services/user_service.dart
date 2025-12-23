@@ -43,9 +43,8 @@ class UserService {
   Future<String?> uploadProfileImage(String imagePath) async {
     try {
       final imageFile = File(imagePath);
-      final cloudinaryUrl = await CloudinaryService.uploadImageFromBytes(
-        await imageFile.readAsBytes(),
-        imagePath.split('/').last,
+      final cloudinaryUrl = await CloudinaryService.uploadImage(
+        imageFile,
       );
       return cloudinaryUrl;
     } catch (e) {

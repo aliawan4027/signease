@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
 
 class CloudinaryService {
   static const String cloudName = 'dqx11fuzl';
@@ -35,60 +35,16 @@ class CloudinaryService {
         }
       }
 
-      final request = http.MultipartRequest(
-        'POST',
+      final response = await http.post(
         Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'file': 'data:image/jpeg;base64,${base64Encode(imageBytes)}',
+          'upload_preset': uploadPreset,
+          'folder': 'profile_images',
+          'public_id': fileName,
+        }),
       );
-
-      request.fields['upload_preset'] = uploadPreset;
-      request.fields['api_key'] = apiKey;
-
-      final multipartFile = http.MultipartFile.fromBytes(
-        'file',
-        imageBytes,
-        filename: fileName,
-      );
-
-      request.files.add(multipartFile);
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        return responseData['secure_url'];
-      } else {
-        print('Cloudinary upload failed: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      print('Error uploading to Cloudinary: $e');
-      return null;
-    }
-  }
-
-  static Future<String?> uploadImageFromBytes(
-      Uint8List imageBytes, String fileName) async {
-    try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload'),
-      );
-
-      request.fields['upload_preset'] = uploadPreset;
-      request.fields['api_key'] = apiKey;
-
-      final multipartFile = http.MultipartFile.fromBytes(
-        'file',
-        imageBytes,
-        filename: fileName,
-      );
-
-      request.files.add(multipartFile);
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
