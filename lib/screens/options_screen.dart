@@ -1,27 +1,102 @@
-// /////Not USed
+import 'package:flutter/material.dart';
+import 'package:sign_ease/normaluserscreens/normaluser.dart';
+import 'package:sign_ease/signlanguserscreen/signlanguser.dart';
+import 'package:sign_ease/utils/colors_utils.dart';
 
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:flutter/material.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:sign_ease/normaluserscreens/normaluser.dart';
-// import 'package:sign_ease/signlanguserscreen/signlanguser.dart';
-// import 'package:sign_ease/utils/colors_utils.dart';
+class OptionsScreen extends StatefulWidget {
+  const OptionsScreen({super.key});
 
-// class OptionScreen extends StatefulWidget {
-//   const OptionScreen({super.key});
+  @override
+  State<OptionsScreen> createState() => _OptionsScreenState();
+}
 
-//   @override
-//   State<OptionScreen> createState() => _OptionScreenState();
-// }
-
-// class _OptionScreenState extends State<OptionScreen> {
-//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-//   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-//   // Method to check user registration and navigate accordingly
-//   Future<void> handleUserRegistration(String selectedUserType) async {
-//     try {
-//       // Get the currently logged-in user's email
+class _OptionsScreenState extends State<OptionsScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Choose User Type"),
+        backgroundColor: hexStringToColor("2E7D32"),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              hexStringToColor("ffffff"),
+              hexStringToColor("f0f0f0"),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Select Your User Type",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NormalUser()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  "Normal User",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SignLangUser(
+                        userName: '',
+                        userEmail: '',
+                        userId: '',
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  "Sign Language User",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 //       User? currentUser = _auth.currentUser;
 //       if (currentUser == null) {
 //         ScaffoldMessenger.of(context).showSnackBar(

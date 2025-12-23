@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sign_ease/utils/firebase_handler.dart';
 import 'package:sign_ease/resuable_widgets/reusable_widget.dart';
 import 'package:sign_ease/screens/signin_screen.dart';
 import 'package:sign_ease/utils/colors_utils.dart';
@@ -18,8 +17,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _userNameTextController = TextEditingController();
   String _selectedUserType = '';
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseHandler _firebaseHandler = FirebaseHandler();
 
   @override
   Widget build(BuildContext context) {
@@ -49,28 +47,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 120, 20, 0),
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width > 600 ? 60 : 20,
+              vertical: MediaQuery.of(context).size.height > 800 ? 80 : 20,
+            ),
             child: Column(
               children: <Widget>[
                 logoWidget("assets/images/logo3.png"),
-                const SizedBox(height: 20),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                 reusableTextField(
                   "Enter UserName",
                   Icons.person_outline,
                   false,
                   _userNameTextController,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                 reusableTextField(
                   "Enter Email Id",
                   Icons.email_outlined,
                   false,
                   _emailTextController,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                 reusableTextField(
                   "Enter Password",
-                  Icons.lock_outlined,
+                  Icons.lock_outline,
                   true,
                   _passwordTextController,
                 ),
@@ -141,49 +142,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     _showLoadingDialog();
     try {
-      final User? user = (await _auth.createUserWithEmailAndPassword(
-        email: _emailTextController.text,
-        password: _passwordTextController.text,
-      ))
-          .user;
+      await _firebaseHandler.signUp(
+        _emailTextController.text,
+        _passwordTextController.text,
+      );
 
-      if (user != null) {
-        await _firestore.collection("users").doc(user.uid).set({
-          "uid": user.uid,
+      // Save user data
+      await _firebaseHandler.saveUserData(
+        _emailTextController.text,
+        {
           "email": _emailTextController.text,
           "username": _userNameTextController.text,
           "userType": _selectedUserType,
-          "createdAt": Timestamp.now(),
-        });
+        },
+      );
 
-        _hideLoadingDialog();
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SignInScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
       _hideLoadingDialog();
 
-      String errorMessage;
-      if (e.code == 'email-already-in-use') {
-        errorMessage = 'This email is already in use. Please try another one.';
-      } else if (e.code == 'weak-password') {
-        errorMessage =
-            'Your password is too weak. Please choose a stronger one.';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'The email you entered is invalid.';
-      } else {
-        errorMessage = 'Something went wrong. Please try again later.';
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SignInScreen()),
       );
     } catch (e) {
       _hideLoadingDialog();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   }

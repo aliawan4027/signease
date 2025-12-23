@@ -45,6 +45,9 @@ dependencies:
   image: ^3.2.0
   camera: ^0.11.0+2
   tflite_v2: ^1.0.0
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.4
+  provider: ^6.1.1
 
 dev_dependencies:
   flutter_test:
@@ -91,6 +94,7 @@ flutter:
     - assets/model.tflite
     - assets/labels.txt
     - assets/signease.png
+    - assets/placeholder.png
     - assets/model/
     - assets\model\signmodel.tflite
     - assets/model/signmodel.tflite

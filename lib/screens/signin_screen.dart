@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:sign_ease/normaluserscreens/normaluser.dart';
 import 'package:sign_ease/screens/signup_screen.dart';
-import 'package:sign_ease/screens/options_screen.dart';
 import 'package:sign_ease/resetingpasswordscreens/forgotpassword.dart';
-import 'package:sign_ease/signlanguserscreen/signlanguser.dart';
 import 'package:sign_ease/utils/colors_utils.dart';
 import 'package:sign_ease/resuable_widgets/reusable_widget.dart';
+import 'package:sign_ease/utils/firebase_handler.dart';
+import 'package:sign_ease/signlanguserscreen/signlanguser.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
+// Import for web storage
+import 'dart:html' as html;
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({Key? key}) : super(key: key);
@@ -20,9 +22,37 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   TextEditingController _passwordTextController = TextEditingController();
   TextEditingController _emailTextController = TextEditingController();
+  bool _rememberMe = false;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseHandler _firebaseHandler = FirebaseHandler();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    // Web: Use localStorage (works for both web and mobile in Flutter)
+    setState(() {
+      _emailTextController.text = html.window.localStorage['email'] ?? '';
+      _passwordTextController.text = html.window.localStorage['password'] ?? '';
+      _rememberMe = html.window.localStorage['rememberMe'] == 'true';
+    });
+  }
+
+  Future<void> _saveCredentials() async {
+    // Web: Use localStorage (works for both web and mobile in Flutter)
+    if (_rememberMe) {
+      html.window.localStorage['email'] = _emailTextController.text;
+      html.window.localStorage['password'] = _passwordTextController.text;
+      html.window.localStorage['rememberMe'] = _rememberMe.toString();
+    } else {
+      html.window.localStorage.remove('email');
+      html.window.localStorage.remove('password');
+      html.window.localStorage.remove('rememberMe');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +72,17 @@ class _SignInScreenState extends State<SignInScreen> {
         child: SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: MediaQuery.of(context).size.height * 0.2,
+              horizontal: MediaQuery.of(context).size.width > 600 ? 40 : 20,
+              vertical: MediaQuery.of(context).size.height * 0.1,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                logoWidget("assets/images/logo3.png"),
-                const SizedBox(height: 30),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.15,
+                  child: logoWidget("assets/images/logo3.png"),
+                ),
+                const SizedBox(height: 20),
                 reusableTextField(
                   "Enter Email",
                   Icons.person_outline,
@@ -71,6 +104,24 @@ class _SignInScreenState extends State<SignInScreen> {
                   buttonText: 'SignIn',
                 ),
                 signUpOption(context),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberMe,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          _rememberMe = value ?? false;
+                        });
+                      },
+                      activeColor: Color.fromARGB(255, 7, 130, 230),
+                    ),
+                    const Text(
+                      'Remember me',
+                      style: TextStyle(color: Color.fromARGB(255, 7, 130, 230)),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 forgotPasswordOption(context),
               ],
@@ -108,61 +159,49 @@ class _SignInScreenState extends State<SignInScreen> {
         _passwordTextController.text.isNotEmpty) {
       showLoadingDialog(context);
       try {
-        UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-          email: _emailTextController.text,
-          password: _passwordTextController.text,
+        await _firebaseHandler.signIn(
+          _emailTextController.text,
+          _passwordTextController.text,
         );
 
-        DocumentSnapshot userDoc = await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .get();
+        // Save credentials if remember me is checked
+        await _saveCredentials();
 
-        if (userDoc.exists) {
-          String userType = userDoc['userType'];
+        // Get current user data to determine user type
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          final userData = await _firebaseHandler.getUserData(currentUser.uid);
+          final userType = userData?['userType'] ?? 'Normal User';
+
           Navigator.pop(context);
 
-          if (userType == "Normal User") {
+          // Route based on user type
+          if (userType == 'Sign Language User') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SignLangUser(
+                  userName: userData?['username'] ?? 'Unknown User',
+                  userEmail: userData?['email'] ?? 'Unknown Email',
+                  userId: currentUser.uid,
+                ),
+              ),
+            );
+          } else {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const NormalUser()),
             );
-          } else if (userType == "Sign Language User") {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const SignLangUser(
-                        userName: '',
-                        userEmail: '',
-                        userId: '',
-                      )),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Invalid user type.")),
-            );
           }
-        } else {
-          Navigator.pop(context);
-          Fluttertoast.showToast(msg: "User data not found in Firestore.");
         }
-      } on FirebaseAuthException catch (e) {
-        Navigator.pop(context);
-        String message = '';
-        if (e.code == 'user-not-found') {
-          message = "No user found for that email.";
-        } else if (e.code == 'wrong-password') {
-          message = "Wrong password provided.";
-        } else {
-          message = e.message ?? "An error occurred";
-        }
-        Fluttertoast.showToast(msg: message);
+
+        Fluttertoast.showToast(msg: "Sign in successful!");
       } catch (e) {
         Navigator.pop(context);
-        Fluttertoast.showToast(msg: "An error occurred: $e");
+        Fluttertoast.showToast(msg: "Error: ${e.toString()}");
       }
     } else {
-      Fluttertoast.showToast(msg: "Please enter both email and password.");
+      Fluttertoast.showToast(msg: "Please enter email and password");
     }
   }
 
@@ -174,22 +213,20 @@ class _SignInScreenState extends State<SignInScreen> {
           "Don't have an account?",
           style: TextStyle(color: Color.fromARGB(255, 7, 130, 230)),
         ),
-        const SizedBox(width: 8),
         GestureDetector(
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => SignUpScreen()),
+              MaterialPageRoute(builder: (context) => const SignUpScreen()),
             );
           },
           child: const Text(
-            "Sign Up",
+            " Sign Up",
             style: TextStyle(
-              color: Color.fromARGB(255, 7, 130, 230),
-              fontWeight: FontWeight.bold,
-            ),
+                color: Color.fromARGB(255, 7, 130, 230),
+                fontWeight: FontWeight.bold),
           ),
-        ),
+        )
       ],
     );
   }

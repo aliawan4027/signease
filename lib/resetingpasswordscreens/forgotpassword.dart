@@ -37,8 +37,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           child: SingleChildScrollView(
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: MediaQuery.of(context).size.height * 0.2,
+                horizontal: MediaQuery.of(context).size.width > 600 ? 60 : 20,
+                vertical: MediaQuery.of(context).size.height > 800
+                    ? 40
+                    : MediaQuery.of(context).size.height * 0.2,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

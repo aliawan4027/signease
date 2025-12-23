@@ -1,23 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:sign_ease/normaluserscreens/CommonChat/CommonChat.dart';
-import 'package:sign_ease/normaluserscreens/normaluserchathead.dart';
-import 'package:sign_ease/screens/hand.dart';
 import 'package:sign_ease/screens/profile.dart';
 import 'package:sign_ease/screens/report.dart';
 import 'package:sign_ease/signlanguserscreen/gameSLU.dart';
+import 'package:sign_ease/signlanguserscreen/model_prediction.dart';
 import 'package:sign_ease/signlanguserscreen/signlanguserchathead.dart';
 import 'package:sign_ease/signlanguserscreen/startchatSL.dart';
 import 'package:sign_ease/utils/colors_utils.dart';
-import 'package:flutter/services.dart'; // Import this package
+import 'package:sign_ease/utils/firebase_handler.dart';
+import 'package:flutter/services.dart';
 
 class SignLangUser extends StatefulWidget {
+  final String userName;
+  final String userEmail;
+  final String userId;
+
   const SignLangUser(
       {super.key,
-      required String userName,
-      required String userEmail,
-      required String userId});
+      required this.userName,
+      required this.userEmail,
+      required this.userId});
 
   @override
   State<SignLangUser> createState() => _SignLangUserState();
@@ -25,7 +27,14 @@ class SignLangUser extends StatefulWidget {
 
 class _SignLangUserState extends State<SignLangUser> {
   int _selectedIndex = 1;
-  final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  final FirebaseHandler _firebaseHandler = FirebaseHandler();
+  late String currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    currentUserId = widget.userId;
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -33,45 +42,49 @@ class _SignLangUserState extends State<SignLangUser> {
     });
   }
 
-  bool _isValidImageUrl(String url) {
-    return Uri.tryParse(url)?.hasAbsolutePath ?? false;
-  }
-
-  Future<String?> _getProfileImageUrl(String userId) async {
-    try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-
-      if (userDoc.exists) {
-        return userDoc['profileImageUrl'] as String?;
-      }
-    } catch (e) {
-      print('Error fetching profile image: $e');
-    }
-    return null;
-  }
-
   Future<Map<String, dynamic>> _getUserDetails(String userId) async {
     try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+      // First try to get profile image from profile collection
+      DocumentSnapshot profileDoc = await _firebaseHandler.firestore
+          .collection('profile')
+          .doc(userId)
+          .get();
+
+      // Fallback to users collection if profile doesn't exist
+      DocumentSnapshot userDoc = await _firebaseHandler.firestore
           .collection('users')
           .doc(userId)
           .get();
-      if (userDoc.exists && userDoc.data() != null) {
-        return userDoc.data() as Map<String, dynamic>;
+
+      Map<String, dynamic> result = {};
+
+      if (profileDoc.exists && profileDoc.data() != null) {
+        final profileData = profileDoc.data() as Map<String, dynamic>;
+        print('SL Profile data found: $profileData'); // Debug line
+        result['username'] = profileData['name'] ?? 'Unknown User';
+        result['email'] = profileData['email'] ?? 'Unknown Email';
+        result['profileImageUrl'] = profileData['profileImageUrl'] ?? '';
+      } else if (userDoc.exists && userDoc.data() != null) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        print('SL User data found: $userData'); // Debug line
+        result = userData;
+      } else {
+        print(
+            'No SL profile or user data found for userId: $userId'); // Debug line
+        result = {'username': 'Unknown User', 'email': 'Unknown Email'};
       }
+
+      return result;
     } catch (e) {
       print('Error fetching user details: $e');
+      return {'username': 'Unknown User', 'email': 'Unknown Email'};
     }
-    return {'username': 'Unknown User', 'email': 'Unknown Email'};
   }
 
   Future<void> _deleteChat(String chatId) async {
     try {
-      // Delete all messages in the chat
-      final messagesRef = FirebaseFirestore.instance
+      // Delete all messages in chat
+      final messagesRef = _firebaseHandler.firestore
           .collection('universalMessages')
           .doc(chatId)
           .collection('messages');
@@ -82,7 +95,7 @@ class _SignLangUserState extends State<SignLangUser> {
       }
 
       // Delete the chat room itself
-      await FirebaseFirestore.instance
+      await _firebaseHandler.firestore
           .collection('universalChats')
           .doc(chatId)
           .delete();
@@ -127,7 +140,7 @@ class _SignLangUserState extends State<SignLangUser> {
     final List<Widget> _widgetOptions = <Widget>[
       const Profile(),
       StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
+        stream: _firebaseHandler.firestore
             .collection('universalChats')
             .where('participants', arrayContains: currentUserId)
             .snapshots(),
@@ -171,89 +184,82 @@ class _SignLangUserState extends State<SignLangUser> {
                   final userDetails = userDetailsSnapshot.data!;
                   final userName = userDetails['username'] ?? 'Unknown User';
                   final userEmail = userDetails['email'] ?? 'Unknown Email';
+                  final profileImageUrl = userDetails['profileImageUrl'] ?? '';
 
-                  return FutureBuilder<String?>(
-                    future: _getProfileImageUrl(otherUserId),
-                    builder: (context, profileSnapshot) {
-                      final profileImageUrl = profileSnapshot.data;
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SignLangUserChatHead(
-                                userId: otherUserId,
-                                userEmail: userEmail,
-                                userName: userName,
-                                userEmails: [userEmail],
-                              ),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage:
-                                  _isValidImageUrl(profileImageUrl ?? '')
-                                      ? NetworkImage(profileImageUrl!)
-                                      : const AssetImage('assets/demo.jpg')
-                                          as ImageProvider,
-                            ),
-                            title: Text(
-                              userName,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Color.fromARGB(255, 7, 130, 230),
-                              ),
-                            ),
-                            subtitle: Text(
-                              userEmail,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color.fromARGB(255, 7, 130, 230),
-                              ),
-                            ),
-                            tileColor: const Color.fromARGB(255, 220, 230, 240),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                final confirmDelete = await showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Delete Chat'),
-                                      content: const Text(
-                                          'Are you sure you want to delete this chat?'),
-                                      actions: [
-                                        TextButton(
-                                          child: const Text('Cancel'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop(false);
-                                          },
-                                        ),
-                                        TextButton(
-                                          child: const Text('Delete'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop(true);
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                                if (confirmDelete == true) {
-                                  _deleteChat(chatDoc.id);
-                                }
-                              },
-                            ),
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SignLangUserChatHead(
+                            userId: otherUserId,
+                            userEmail: userEmail,
+                            userName: userName,
+                            userEmails: [userEmail],
                           ),
                         ),
                       );
                     },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl) as ImageProvider
+                              : const AssetImage('assets/demo.jpg'),
+                        ),
+                        title: Text(
+                          userName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Color.fromARGB(255, 7, 130, 230),
+                          ),
+                        ),
+                        subtitle: Text(
+                          userEmail,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color.fromARGB(255, 7, 130, 230),
+                          ),
+                        ),
+                        tileColor: const Color.fromARGB(255, 220, 230, 240),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
+                            final confirmDelete = await showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Delete Chat'),
+                                  content: const Text(
+                                      'Are you sure you want to delete this chat?'),
+                                  actions: [
+                                    TextButton(
+                                      child: const Text('Cancel'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop(false);
+                                      },
+                                    ),
+                                    TextButton(
+                                      child: const Text('Delete'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop(true);
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            if (confirmDelete == true) {
+                              _deleteChat(chatDoc.id);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
                   );
                 },
               );
@@ -262,7 +268,7 @@ class _SignLangUserState extends State<SignLangUser> {
         },
       ),
       const GameSL(),
-      const Hand(),
+      const ModelPrediction(),
       const Report(),
     ];
 

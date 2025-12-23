@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:camera/camera.dart';
 import 'package:sign_ease/signlanguserscreen/model.dart';
 import 'package:sign_ease/utils/colors_utils.dart';
@@ -13,7 +15,8 @@ class _RecordGestureScreenState extends State<RecordGestureScreen> {
   late CameraController _cameraController;
   late List<CameraDescription> _cameras;
   bool _isCameraInitialized = false;
-  List<File> _images = [];
+  late List<File> _images = [];
+  late List<Uint8List> _imageBytes = [];
   List<String> _predictions = [];
   late ModelHandler _modelHandler;
 
@@ -53,6 +56,13 @@ class _RecordGestureScreenState extends State<RecordGestureScreen> {
     if (pickedFile != null) {
       File newImage = File(pickedFile.path);
       setState(() => _images.add(newImage));
+
+      // For web, also store as bytes
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        setState(() => _imageBytes.add(bytes));
+      }
+
       _predictSign(newImage);
     }
   }
@@ -70,6 +80,7 @@ class _RecordGestureScreenState extends State<RecordGestureScreen> {
     setState(() {
       if (_images.length > index) _images.removeAt(index);
       if (_predictions.length > index) _predictions.removeAt(index);
+      if (kIsWeb && _imageBytes.length > index) _imageBytes.removeAt(index);
     });
   }
 
@@ -128,8 +139,11 @@ class _RecordGestureScreenState extends State<RecordGestureScreen> {
                     ),
                     child: Stack(
                       children: [
-                        Image.file(_images[index],
-                            width: 100, height: 100, fit: BoxFit.cover),
+                        kIsWeb
+                            ? Image.memory(_imageBytes[index],
+                                width: 100, height: 100, fit: BoxFit.cover)
+                            : Image.file(_images[index],
+                                width: 100, height: 100, fit: BoxFit.cover),
                         if (_predictions.length > index)
                           Positioned(
                             bottom: 5,

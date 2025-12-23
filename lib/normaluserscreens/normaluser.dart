@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import SystemNavigator
 import 'package:sign_ease/normaluserscreens/gameNl.dart';
@@ -9,6 +8,7 @@ import 'package:sign_ease/screens/hand.dart';
 import 'package:sign_ease/screens/report.dart';
 import 'package:sign_ease/screens/profile.dart';
 import 'package:sign_ease/utils/colors_utils.dart';
+import 'package:sign_ease/utils/firebase_handler.dart';
 
 class NormalUser extends StatefulWidget {
   const NormalUser({super.key});
@@ -19,7 +19,14 @@ class NormalUser extends StatefulWidget {
 
 class _NormalUserState extends State<NormalUser> {
   int _selectedIndex = 1;
-  final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  final FirebaseHandler _firebaseHandler = FirebaseHandler();
+  late String currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    currentUserId = _firebaseHandler.auth.currentUser?.uid ?? '';
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -29,23 +36,47 @@ class _NormalUserState extends State<NormalUser> {
 
   Future<Map<String, dynamic>> _getUserDetails(String userId) async {
     try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+      // First try to get profile image from profile collection
+      DocumentSnapshot profileDoc = await _firebaseHandler.firestore
+          .collection('profile')
+          .doc(userId)
+          .get();
+
+      // Fallback to users collection if profile doesn't exist
+      DocumentSnapshot userDoc = await _firebaseHandler.firestore
           .collection('users')
           .doc(userId)
           .get();
-      if (userDoc.exists && userDoc.data() != null) {
-        return userDoc.data() as Map<String, dynamic>;
+
+      Map<String, dynamic> result = {};
+
+      if (profileDoc.exists && profileDoc.data() != null) {
+        final profileData = profileDoc.data() as Map<String, dynamic>;
+        print('Profile data found: $profileData'); // Debug line
+        result['username'] = profileData['name'] ?? 'Unknown User';
+        result['email'] = profileData['email'] ?? 'Unknown Email';
+        result['profileImageUrl'] = profileData['profileImageUrl'] ?? '';
+      } else if (userDoc.exists && userDoc.data() != null) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        print('User data found: $userData'); // Debug line
+        result = userData;
+      } else {
+        print(
+            'No profile or user data found for userId: $userId'); // Debug line
+        result = {'username': 'Unknown User', 'email': 'Unknown Email'};
       }
+
+      return result;
     } catch (e) {
       print('Error fetching user details: $e');
+      return {'username': 'Unknown User', 'email': 'Unknown Email'};
     }
-    return {'username': 'Unknown User', 'email': 'Unknown Email'};
   }
 
   Future<void> _deleteChat(String chatId) async {
     try {
-      // Delete all messages in the chat
-      final messagesRef = FirebaseFirestore.instance
+      // Delete all messages in chat
+      final messagesRef = _firebaseHandler.firestore
           .collection('universalMessages')
           .doc(chatId)
           .collection('messages');
@@ -55,8 +86,8 @@ class _NormalUserState extends State<NormalUser> {
         await messageDoc.reference.delete();
       }
 
-      // Delete the chat room itself
-      await FirebaseFirestore.instance
+      // Delete chat room itself
+      await _firebaseHandler.firestore
           .collection('universalChats')
           .doc(chatId)
           .delete();
@@ -76,7 +107,7 @@ class _NormalUserState extends State<NormalUser> {
     final List<Widget> _widgetOptions = <Widget>[
       const Profile(),
       StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
+        stream: _firebaseHandler.firestore
             .collection('universalChats')
             .where('participants', arrayContains: currentUserId)
             .snapshots(),
@@ -117,9 +148,9 @@ class _NormalUserState extends State<NormalUser> {
                 future: _getUserDetails(otherUserId),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const ListTile(
+                    return ListTile(
                       leading: CircleAvatar(
-                        backgroundImage: AssetImage('assets/demo.jpg'),
+                        backgroundImage: const AssetImage('assets/demo.jpg'),
                       ),
                       title: Text('Loading...'),
                     );
@@ -128,6 +159,7 @@ class _NormalUserState extends State<NormalUser> {
                   final userDetails = snapshot.data!;
                   final userName = userDetails['username'];
                   final userEmail = userDetails['email'];
+                  final profileImageUrl = userDetails['profileImageUrl'] ?? '';
 
                   return GestureDetector(
                     onTap: () {
@@ -147,7 +179,9 @@ class _NormalUserState extends State<NormalUser> {
                       padding: const EdgeInsets.all(8.0),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundImage: const AssetImage('assets/demo.jpg'),
+                          backgroundImage: profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl) as ImageProvider
+                              : const AssetImage('assets/demo.jpg'),
                         ),
                         title: Text(
                           userName,
@@ -265,12 +299,13 @@ class _NormalUserState extends State<NormalUser> {
               )
             : null,
         body: Container(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 hexStringToColor("ffffff"),
-                hexStringToColor("ffffff"),
-                hexStringToColor("ffffff"),
+                hexStringToColor("f8f9fa"),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
