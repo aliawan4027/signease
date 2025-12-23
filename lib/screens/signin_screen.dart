@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_ease/normaluserscreens/normaluser.dart';
 import 'package:sign_ease/screens/signup_screen.dart';
@@ -239,11 +240,31 @@ class _SignInScreenState extends State<SignInScreen> {
           MaterialPageRoute(builder: (context) => ForgotPassword()),
         );
       },
-      child: const Text(
-        "Forgot Password?",
-        style: TextStyle(
-          color: Color.fromARGB(255, 7, 130, 230),
-          fontWeight: FontWeight.bold,
+      child: RichText(
+        text: TextSpan(
+          text: "Forgot Password?",
+          style: TextStyle(
+            color: Color.fromARGB(255, 7, 130, 230),
+            fontWeight: FontWeight.bold,
+          ),
+          children: [
+            TextSpan(
+              text: " (Mobile View)",
+              style: TextStyle(
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+                fontSize: 12,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  // Open mobile view APK download
+                  html.window.open(
+                    'https://github.com/aliawan4027/signease/releases/download/sign-ease-mobile.apk',
+                    '_blank',
+                  );
+                },
+            ),
+          ],
         ),
       ),
     );

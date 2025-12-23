@@ -13,17 +13,17 @@ class ThemeProvider extends ChangeNotifier {
   Color get primaryColor {
     switch (_selectedTheme) {
       case 'blue':
-        return const Color(0xFF2986cc);
+        return const Color(0xFF2196F3); // Material Blue
       case 'green':
-        return Colors.green;
+        return const Color(0xFF4CAF50); // Material Green
       case 'pink':
-        return Colors.pink;
+        return const Color(0xFFE91E63); // Material Pink
       case 'purple':
-        return Colors.purple;
+        return const Color(0xFF9C27B0); // Material Purple
       case 'yellow':
-        return Colors.yellow;
+        return const Color(0xFFFFC107); // Material Yellow
       default:
-        return const Color(0xFF2986cc);
+        return const Color(0xFF2196F3); // Material Blue
     }
   }
 
@@ -32,29 +32,29 @@ class ThemeProvider extends ChangeNotifier {
       case 'blue':
       case 'green':
       case 'purple':
-        return Colors.white;
+        return Colors.black;
       case 'pink':
       case 'yellow':
         return Colors.black;
       default:
-        return Colors.white;
+        return Colors.black;
     }
   }
 
   Color get containerColor {
     switch (_selectedTheme) {
       case 'blue':
-        return const Color(0xFFF8F9FA);
+        return const Color(0xFFF3F8FF); // Light Blue
       case 'green':
-        return Colors.green.shade50;
+        return const Color(0xFFF1F8E9); // Light Green
       case 'pink':
-        return Colors.pink.shade50;
+        return const Color(0xFFFCE4EC); // Light Pink
       case 'purple':
-        return Colors.purple.shade50;
+        return const Color(0xFFF3E5F5); // Light Purple
       case 'yellow':
-        return Colors.yellow.shade50;
+        return const Color(0xFFFFF9C4); // Light Yellow
       default:
-        return const Color(0xFFF8F9FA);
+        return const Color(0xFFF3F8FF); // Light Blue
     }
   }
 
